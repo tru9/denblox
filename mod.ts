@@ -1,1 +1,0 @@
-export { getUser } from "./src/api/controllers/User.ts";
