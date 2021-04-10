@@ -25,11 +25,5 @@ About
 </p>
 
 
-<h1 align="center">
-Essentials
-<br>
-</h1>
-
-
 ## Essentials 
 - [Deno.js](https://Deno.land)
