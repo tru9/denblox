@@ -30,4 +30,11 @@ About
 ```js
 import * as denblox from "https://deno.land/x/denblox/mod.ts"
 ```
+# Example
+```js
+import * as denblox from "https://deno.land/x/denblox/mod.ts";
+
+let getUsers = await denblox.searchUser("roblox");
+console.log(getUsers)
+```
 
