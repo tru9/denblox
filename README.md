@@ -17,7 +17,8 @@ About
 <br>
 </h1>
 <p align="center">
-          DenBlox is a open sourced Deno module created to help users access ROBLOX functions you'd do on ROBLOX.
+     DenBlox is currently in development mode, making most functions <strong>unstable</strong>.
      <br>
-    DenBlox is currently in development mode, making most functions <strong>unstable</strong>.
+     <br>
+    DenBlox is a open sourced project developed for projects trying to do anything you'd normally do on the <a href="https://www.roblox.com">ROBLOX</a> page.
 </p>
