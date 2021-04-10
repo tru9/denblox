@@ -26,10 +26,7 @@ About
 </p>
 
 
-<h1 align="center">
-    Importing
-</h1>
-
+# Importing
 ```js
 import * as denblox from "https://deno.land/x/denblox/mod.ts"
 ```
