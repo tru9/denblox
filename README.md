@@ -1,5 +1,4 @@
-<img src="denblox.png" height="200px">
----
-<div align="center">
-**A Deno API Wrapper for linking with the Official ROBLOX API.**
-</div>
+<h1 align="center">
+    <img src="https://raw.githubusercontent.com/tru9/denblox/main/denblox.png" alt="denblox" width="450"/>
+    <br>
+</h1>
