@@ -38,5 +38,11 @@ let getUsers = await denblox.searchUser("roblox");
 console.log(getUsers)
 ```
 
+# Versions
+### Stable -
+* **v1.0-alpha** - Provides basic support for User and Thumbnail functionality. 
+### Unstable -
+* **v0.0.1** - Not as stable as alpha version & missing readme.
+* **v0.0.0** - No purpose as I was messing around with deno.
 # Credits
 * [**tru9**](https://github.com/tru9/) - Library Maintainer  
