@@ -39,4 +39,4 @@ console.log(getUsers)
 ```
 
 # Credits
-* [**tru9**](https://github.com/tru9/) - Maintainer  
+* [**tru9**](https://github.com/tru9/) - Library Maintainer  
