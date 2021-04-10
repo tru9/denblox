@@ -26,5 +26,11 @@ About
 </p>
 
 
-## Essentials 
-- [Deno.js](https://Deno.land)
+<h1 align="center">
+    Importing
+</h1>
+
+```js
+import * as denblox from "https://deno.land/x/denblox/mod.ts"
+```
+
