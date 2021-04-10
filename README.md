@@ -31,6 +31,6 @@ About
 </h1>
 
 ```js
-           import * as denblox from "https://deno.land/x/denblox/mod.ts"
+import * as denblox from "https://deno.land/x/denblox/mod.ts"
 ```
 
