@@ -19,6 +19,7 @@ About
 <p align="center">
      DenBlox is currently in development mode, making most functions <strong>unstable</strong>.
      <br>
-     <br>
     DenBlox is a open sourced project developed for projects trying to do anything you'd normally do on the <a href="https://www.roblox.com">ROBLOX</a> page.
+    <br>
+    DenBlox was created 
 </p>
