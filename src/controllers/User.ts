@@ -83,7 +83,6 @@ export function getUserGroups(id: Number | String): Promise<UserGroup[]> {
         let out = [];
         for (const data of response.data) {
             const modifiedData = { ...data };
-            console.log(modifiedData.group.shout)
             if (modifiedData.group.shout) {
                 modifiedData.group.shout.created = new Date(data.group.shout.created);
                 modifiedData.group.shout.updated = new Date(data.group.shout.updated);
