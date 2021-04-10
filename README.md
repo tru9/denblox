@@ -38,3 +38,5 @@ let getUsers = await denblox.searchUser("roblox");
 console.log(getUsers)
 ```
 
+# Credits
+* [**tru9**](https://github.com/tru9/) - Maintainer  
