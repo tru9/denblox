@@ -1,3 +1,5 @@
+import { IconData } from "../typings/Icons.ts";
+
 const sizes = {
     avatar: ["30x30", "48x48", "60x60", "75x75", "100x100", "110x100", "140x140", "150x150", "180x180", "250x250", "352x352", "420x420", "720x720"],
     place: ["50x50", "128x128", "150x150", "256x256", "512x512"],
@@ -13,94 +15,140 @@ export interface Icon {
 }
 
 // AVATARS
+export async function getAvatar(targetId: number | number[] | string[] | string, config?: {
+    size?: "30x30" | "48x48" | "60x60" | "75x75" | "100x100" | "110x100" | "140x140" | "150x150" | "180x180" | "250x250" | "352x352" | "420x420" | "720x720",
+    format?: "Png" | "Jpeg",
+    isCircular?: true | false
+}): Promise<IconData> {
+    if (!targetId) throw new Error("Invalid Target ID.");
+    const ids = (Array.isArray(targetId)) ? targetId.join("%2C") : targetId;
+    const url = `https://thumbnails.roblox.com/v1/users/avatar?userIds=${ids}&size=${config?.size || "30x30"}&format=${config?.format || "Png"}&isCircular=${config?.isCircular || "false"}`;
 
+    const response = await fetch(url);
+    const body = await response.json();
 
-export function getAvatar(ids: Number | Number[] | String | String[], size: "30x30" | "48x48" | "60x60" | "75x75" | "100x100" | "110x100" | "140x140" | "150x150" | "180x180" | "250x250" | "352x352" | "420x420" | "720x720" = "30x30", format: "Png" | "Jpeg" = "Png", isCircular: true | false = false): Promise<Icon> {
-    return new Promise<Icon>(async (resolve, reject) => {
-        if (!ids) return reject(new Error("Invalid User ID."))
-        if (!sizes.avatar.includes(size)) return reject(new Error(`The allowed sizes include: ${sizes.avatar.join(", ")}.`));
-        if (!format || !["Png", "Jpeg"].includes(format)) return reject(new Error("The allowed format sizes are Png and Jpeg."));
-        if (typeof isCircular !== "boolean") reject(new Error("isCircular is a boolean!"));
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Avatar Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
 
-
-        const url = (Array.isArray(ids)) ? `https://thumbnails.roblox.com/v1/users/avatar?userIds=${ids.join("%2C")}&size=${size}&format=${format}&isCircular=${isCircular}` : `https://thumbnails.roblox.com/v1/users/avatar?userIds=${ids}&size=${size}&format=${format}&isCircular=${isCircular}`;
-        const response = await (await fetch(url)).json();
-
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response.data);
-    })
+    return body;
 }
 
 // HEAD-SHOTS
 
-export function getHeadShots(ids: Number | Number[] | String | String[], size: "48x48" | "50x50" | "60x60" | "75x75" | "100x100" | "110x100" | "150x150" | "180x180" | "352x352" | "420x420" | "720x720" = "48x48", format: "Png" | "Jpeg" = "Png", isCircular: true | false = false): Promise<Icon> {
-    return new Promise<Icon>(async (resolve, reject) => {
-        if (!ids) return reject(new Error("Invalid User ID."))
-        if (!sizes["head-shot"].includes(size)) return reject(new Error(`The allowed sizes include: ${sizes["head-shot"].join(", ")}.`));
-        if (!format || !["Png", "Jpeg"].includes(format)) return reject(new Error("The allowed format sizes are Png and Jpeg."));
-        if (typeof isCircular !== "boolean") reject(new Error("isCircular is a boolean!"));
+export async function getUserHeadShot(targetId: number | number[] | string[] | string, config?: {
+    size?: "48x48" | "50x50" | "60x60" | "75x75" | "100x100" | "110x100" | "150x150" | "180x180" | "352x352" | "420x420" | "720x720",
+    format?: "Png" | "Jpeg",
+    isCircular?: true | false
+}): Promise<IconData> {
+    if (!targetId) throw new Error("Invalid Target ID.");
+    const ids = (Array.isArray(targetId)) ? targetId.join("%2C") : targetId;
+    const url = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${ids}&size=${config?.size || "48x48"}&format=${config?.format || "Png"}&isCircular=${config?.isCircular || "false"}`;
 
+    const response = await fetch(url);
+    const body = await response.json();
 
-        const url = (Array.isArray(ids)) ? `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${ids.join("%2C")}&size=${size}&format=${format}&isCircular=${isCircular}` : `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${ids}&size=${size}&format=${format}&isCircular=${isCircular}`;
-        const response = await (await fetch(url)).json();
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Avatar Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
 
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response.data);
-    })
+    return body;
 }
 
 
 // PLACE 
 
-export function placeIcon(ids: Number | Number[] | String | String[], size: "50x50" | "128x128" | "150x150" | "256x256" | "512x512" = "50x50", format: "Png" | "Jpeg" = "Png", isCircular: true | false = false): Promise<Icon> {
-    return new Promise<Icon>(async (resolve, reject) => {
-        if (!ids) return reject(new Error("Invalid User ID."))
-        if (!sizes.place.includes(size)) return reject(new Error(`The allowed sizes include: ${sizes.place.join(", ")}.`));
-        if (!format || !["Png", "Jpeg"].includes(format)) return reject(new Error("The allowed format sizes are Png and Jpeg."));
-        if (typeof isCircular !== "boolean") reject(new Error("isCircular is a boolean!"));
+export async function getPlaceIcon(targetId: number | number[] | string[] | string, config?: {
+    size?: "50x50" | "128x1208" | "150x150" | "256x256" | "512x512",
+    format?: "Png" | "Jpeg",
+    isCircular?: true | false
+}): Promise<IconData> {
+    if (!targetId) throw new Error("Invalid Target ID.");
+    const ids = (Array.isArray(targetId)) ? targetId.join("%2C") : targetId;
+    const url = `https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${ids}&size=${config?.size || "50x50"}&format=${config?.format || "Png"}&isCircular=${config?.isCircular || "false"}`;
 
+    const response = await fetch(url);
+    const body = await response.json();
 
-        const url = (Array.isArray(ids)) ? `https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${ids.join("%2C")}&size=${size}&format=${format}&isCircular=${isCircular}` : `https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${ids}&size=${size}&format=${format}&isCircular=${isCircular}`;
-        const response = await (await fetch(url)).json();
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Avatar Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
 
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response.data);
-    })
+    return body;
 }
 
 
 // BADGE
 
 
-export function badgeIcon(ids: Number | Number[] | String | String[], size: "150x150" = "150x150", format: "Png" | "Jpeg" = "Png", isCircular: true | false = false): Promise<Icon> {
-    return new Promise<Icon>(async (resolve, reject) => {
-        if (!ids) return reject(new Error("Invalid User ID."))
-        if (size !== "150x150") return reject(new Error(`The allowed sizes include: 150x150.`));
-        if (!format || !["Png", "Jpeg"].includes(format)) return reject(new Error("The allowed format sizes are Png and Jpeg."));
-        if (typeof isCircular !== "boolean") reject(new Error("isCircular is a boolean!"));
+export async function getBadgeIcon(targetId: number | number[] | string[] | string, config?: {
+    size?: "150x150",
+    format?: "Png" | "Jpeg",
+    isCircular?: true | false
+}): Promise<IconData> {
+    if (!targetId) throw new Error("Invalid Target ID.");
+    const ids = (Array.isArray(targetId)) ? targetId.join("%2C") : targetId;
+    const url = `https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${ids}&size=${config?.size || "150x150"}&format=${config?.format || "Png"}&isCircular=${config?.isCircular || "false"}`;
 
+    const response = await fetch(url);
+    const body = await response.json();
 
-        const url = (Array.isArray(ids)) ? `https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${ids}&size=${size}&format=${format}&isCircular=${isCircular}` : `https://thumbnails.roblox.com/v1/badges/icons?badgeIds=${ids}&size=${size}&format=${format}`;
-        const response = await (await fetch(url)).json();
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response);
-    })
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Avatar Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
+
+    return body;
 }
-
 
 // GAMEPASSES 
 
-export function gamepassIcon(ids: Number | Number[] | String | String[], size: "150x150" = "150x150", format: "Png" | "Jpeg" = "Png", isCircular: true | false = false): Promise<Icon> {
-    return new Promise<Icon>(async (resolve, reject) => {
-        if (!ids) return reject(new Error("Invalid User ID."))
-        if (size !== "150x150") return reject(new Error(`The allowed sizes include: 150x150.`));
-        if (!format || !["Png", "Jpeg"].includes(format)) return reject(new Error("The allowed format sizes are Png and Jpeg."));
-        if (typeof isCircular !== "boolean") reject(new Error("isCircular is a boolean!"));
 
 
-        const url = (Array.isArray(ids)) ? `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids}&size=${size}&format=${format}&isCircular=${isCircular}` : `https://thumbnails.roblox.com/v1/game-passes?gamePassIds=${ids}&size=${size}&format=${format}`;
-        const response = await (await fetch(url)).json();
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response);
-    })
+export async function getGamepassIcon(targetId: number | number[] | string[] | string, config?: {
+    size?: "150x150",
+    format?: "Png" | "Jpeg",
+    isCircular?: true | false
+}): Promise<IconData> {
+    if (!targetId) throw new Error("Invalid Target ID.");
+    const ids = (Array.isArray(targetId)) ? targetId.join("%2C") : targetId;
+    const url = `https://thumbnails.roblox.com/v1/places/gameicons?placeIds=${ids}&size=${config?.size || "150x150"}&format=${config?.format || "Png"}&isCircular=${config?.isCircular || "false"}`;
+
+    const response = await fetch(url);
+    const body = await response.json();
+
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Avatar Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
+
+    return body;
 }

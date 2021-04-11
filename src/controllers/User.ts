@@ -1,198 +1,258 @@
-
-// PROFILE
-
-interface User {
-    buildersClubMemberShipType: string;
-    userId: number;
-    username: string;
-    displayName: string;
-}
-
-export interface UserProfile {
-    id: number;
-    username: string;
-    displayName: string;
-    description: string;
-    banned: boolean;
-    created: Date;
-}
+import { User, UsernameSearch, UserGroups, UserBadges, UserSearch } from "../typings/User.ts";
+import { getCSRFToken } from "../helpers/session.ts"
+import storage from "../helpers/storage.ts";
 
 
-export function getIDByUsername(username: string) {
-    return new Promise<number | string>(async (resolve, reject) => {
-        if (!username) reject(new Error("UserName not Provided"));
-        const response = await (await fetch(`https://api.roblox.com/users/get-by-username?username=${username}`))
-            .json();
+export async function getIDFromUsername(username: string): Promise<UsernameSearch> {
+    if (!username) throw new Error("Username cannot be empty");
+    const url = `https://api.roblox.com/users/get-by-username?username=${username}`;
+    const response = await fetch(url);
+    const body = await response.json();
 
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        return resolve(response);
-    });
-}
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `User Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
 
-export function getProfile(id: Number | String): Promise<UserProfile> {
-    return new Promise<UserProfile>(async (resolve, reject) => {
-        if (!id) return reject(new Error("Invalid User ID."))
-        const response = await (await fetch(`https://users.roblox.com/v1/users/${id}`)).json();
-
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-        const modifiedProfile = { ...response };
-        modifiedProfile.banned = response["isBanned"]
-        modifiedProfile.created = new Date(modifiedProfile["created"]);
-
-        return resolve(modifiedProfile);
-    })
-}
-
-
-
-
-// GROUPS 
-export interface UserGroup {
-    group: {
-        groupID: number;
-        name: string;
-        description: string;
-        owner: User;
-        shout: {
-            body: string;
-            poster: User;
-            created: Date;
-            updated: Date;
-        } | null;
-        memberCount: number;
-        isBuildersClubOnly: boolean;
-        publicEntryAllowed: boolean
-    },
-
-    role: {
-        roleID: number;
-        name: string;
-        rank: number,
-        userCount: number
+    return {
+        username: username,
+        id: body.Id
     }
 }
 
+export async function getUserProfile(id: number | string): Promise<User> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(id.toString())) throw new Error("Invalid User ID.");
 
-export function getUserGroups(id: Number | String): Promise<UserGroup[]> {
-    return new Promise<UserGroup[]>(async (resolve, reject) => {
-        if (!id) return reject(new Error("Invalid User ID."))
-        const response = await (await fetch(`https://groups.roblox.com/v1/users/${id}/groups/roles`)).json();
-
-        if ("errors" in response) reject(new Error(response["errors"][0].message));
-
-        let out = [];
-        for (const data of response.data) {
-            const modifiedData = { ...data };
-            if (modifiedData.group.shout) {
-                modifiedData.group.shout.created = new Date(data.group.shout.created);
-                modifiedData.group.shout.updated = new Date(data.group.shout.updated);
-            }
-
-            out.push(modifiedData);
-        }
-
-        return resolve(out);
+    const [response, user, ...avatars] = await Promise.all([
+        fetch(`https://users.roblox.com/v1/users/${id}`),
+        fetch(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${id}&size=352x352&format=Png`),
+        fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${id}&size=352x352&format=Png`)
+    ]).then(async (res) => {
+        return [res[0], ...await Promise.all(res.map((response) => response.json()))]
     })
+
+    const avatar = avatars[0].data[0].imageUrl || null;
+    const headshot = avatars[1].data[0].imageUrl || null;
+
+    if (response.status !== 200 || "errors" in user) {
+        throw {
+            ok: response.ok,
+            errors: user["errors"][0] || {
+                code: response.status,
+                message: `User Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
+
+    const out = {
+        ...user, avatars: {
+            bodyUrl: avatar,
+            headshotUrl: headshot,
+        }
+    }
+
+    delete out.displayName;
+    out.created = new Date(user.created);
+    return out;
 };
 
+
+
+export async function getUserGroups(id: number | string): Promise<UserGroups[]> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(id.toString())) throw new Error("Invalid User ID.");
+
+    const url = `https://groups.roblox.com/v1/users/${id}/groups/roles`;
+    const response = await fetch(url);
+    const body = await response.json();
+
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `User Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    };
+
+    const out = [];
+    for (const key of body.data) {
+        const obj = { ...key };
+        const { shout, owner } = obj.group;
+        delete owner.displayName;
+        if (shout) {
+            shout.created = new Date(key.group.shout.created);
+            shout.updated = new Date(key.group.shout.updated);
+        }
+        out.push(obj);
+    };
+
+    return out;
+
+}
 // BADGES
 
-export interface UserBadge {
-    nextPageCursor: string;
-    previousPageCursor: string;
-    data: UserBadges[]
-}
+export async function getUserBadges(userId: number | string, config?: {
+    limit?: 10 | 25 | 50 | 100,
+    sort?: "Asc" | "Desc",
+    cursor?: string;
+}): Promise<UserBadges> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(userId.toString())) throw new Error("Invalid User ID.");
 
-interface UserBadges {
-    previousPageCursor: string;
-    nextPageCursor: string;
-    name: string;
-    badgeId: number;
-    description: string | null;
-    enabled: boolean;
-    iconImageId: number;
-    awarder: {
-        id: number;
-        type: string;
-        name: string
-    };
-    statistics: {
-        pastDayAwardedCount: number;
-        awardedCount: number;
-        winRatePercentage: number
-    };
+    let url = `https://badges.roblox.com/v1/users/${userId}/badges?limit=${config?.limit || 10}&sortOrder=${config?.sort || "Asc"}`;
+    if (config?.cursor) url += `&cursor=${config?.cursor}`;
+    const response = await fetch(url);
+    const body = await response.json();
 
-    created: Date;
-    updated: Date;
-}
-
-export function getUserBadges(id: Number | String, limit: 10 | 25 | 50 | 100, sort: "Asc" | "Desc" = "Asc", cursor?: string | null): Promise<UserBadge> {
-    return new Promise<UserBadge>(async (resolve, reject) => {
-        if (!id) return reject(new Error("Invalid User ID."))
-        if (!limit || ![10, 25, 50, 100].includes(limit)) return reject(new Error("The allowed limit values include: 10, 25, 50, and 100."));
-        if (!sort || !["asc", "desc"].includes(sort.toLowerCase())) return reject(new Error("The allowed sort values are Asc or Desc."));
-
-        const url = (cursor) ? `https://badges.roblox.com/v1/users/${id}/badges?limit=${limit}&cursor=${cursor}&sortOrder=${sort}` : `https://badges.roblox.com/v1/users/${id}/badges?limit=${limit}&sortOrder=${sort}`
-        const response = await (await fetch(url)).json();
-        if ("errors" in response) return reject(new Error(response.errors[0].message));
-
-        const out = [];
-        for (const badge of response.data) {
-            const modifiedBadge = { ...badge };
-            modifiedBadge.created = new Date(badge.created);
-            modifiedBadge.updated = new Date(badge.updated);
-
-            // DELETE PROPERTIES
-            delete modifiedBadge["displayName"];
-            delete modifiedBadge["displayDescription"];
-            out.push(modifiedBadge);
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `User Request Failed; Left with an error code of ${response.status}`
+            }
         }
+    };
 
-        return resolve({
-            nextPageCursor: response["nextPageCursor"],
-            previousPageCursor: response["previousPageCursor"],
-            data: out
-        });
-    })
+    const out = [];
+    for (const badge of body.data) {
+        const obj = { ...badge };
+        obj.created = new Date(badge.created);
+        obj.updated = new Date(badge.updated);
+        delete obj.displayName;
+        delete obj.displayIconImageId;
+        out.push(obj);
+    };
+
+    return {
+        nextPageCursor: body.nextPageCursor,
+        previousPageCursor: body.previousPageCursor,
+        data: out
+    };
+
 };
-
-
 
 // USER SEARCH
 
-export interface UserSearch {
-    nextPageCursor: string | undefined;
-    previousPageCursor: string | undefined;
-    data: Users[]
+export async function userSearch(query: string, config?: {
+    limit?: 10 | 25 | 50 | 100,
+    cursor?: string
+}): Promise<UserSearch> {
+    if (!query) throw new Error("Invalid Query.");
+    let url = `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${config?.limit || 10}`;
+    if (config?.cursor) url += `&cursor=${config.cursor}`;
+
+    const response = await fetch(url);
+    const body = await response.json();
+
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `User Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    }
+
+    return body;
+};
+
+
+export async function requestFriendship(targetId: number | string): Promise<{ success: boolean, isCaptchaResponse: boolean }> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(targetId.toString())) throw new Error("Invalid User ID.");
+
+    const { token } = await getCSRFToken();
+    let url = `https://friends.roblox.com/v1/users/${targetId}/request-friendship`;
+    let response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Cookie": `.ROBLOSECURITY=${storage.cookie}`,
+            "X-CSRF-TOKEN": token
+        }
+    });
+
+    const body = await response.json();
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Friend Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    }
+
+    return body;
 }
 
-interface Users {
-    id: number;
-    username: string;
-    previousUsernames: string[];
+export async function follow(targetId: number | string): Promise<{ success: boolean, isCaptchaResponse: boolean }> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(targetId.toString())) throw new Error("Invalid User ID.");
+
+    const { token } = await getCSRFToken();
+    let url = `https://friends.roblox.com/v1/users/${targetId}/follow`;
+    let response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Cookie": `.ROBLOSECURITY=${storage.cookie}`,
+            "X-CSRF-TOKEN": token
+        }
+    });
+
+    const body = await response.json();
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Follow Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    }
+
+    return body;
 }
 
-export function searchUser(query: string, limit: 10 | 25 | 50 | 100 = 10, cursor?: string): Promise<UserSearch> {
-    return new Promise<UserSearch>(async (resolve, reject) => {
-        if (!query) return reject(new Error("Query not provided."));
-        if (!limit || ![10, 25, 50, 100].includes(limit)) return reject(new Error("The allowed limit values include: 10, 25, 50, and 100."));
 
-        const url = (cursor) ? `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${limit}&cursor=${cursor}` : `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${limit}`;
-        const response = await (await fetch(url)).json();
+export async function unfollow(targetId: number | string): Promise<{ success: boolean }> {
+    const idChecker = new RegExp('^[0-9]+$');
+    if (!idChecker.test(targetId.toString())) throw new Error("Invalid User ID.");
 
-        if ("errors" in response) return reject(new Error(response.errors[0].message));
-        const out = [];
+    const { token } = await getCSRFToken();
+    let url = `https://friends.roblox.com/v1/users/${targetId}/unfollow`;
+    let response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Cookie": `.ROBLOSECURITY=${storage.cookie}`,
+            "X-CSRF-TOKEN": token
+        }
+    });
 
-        for (const user of response.data) {
-            const modifiedUser = { ...user };
-            delete modifiedUser.displayName;
-            out.push(modifiedUser);
-        };
+    const body = await response.json();
+    if (response.status !== 200 || "errors" in body) {
+        throw {
+            ok: response.ok,
+            errors: body["errors"][0] || {
+                code: response.status,
+                message: `Follow Request Failed; Left with an error code of ${response.status}`
+            }
+        }
+    }
 
-        return resolve({
-            nextPageCursor: response.nextPageCursor,
-            previousPageCursor: response.previousPageCursor,
-            data: out
-        });
-    })
+    return {
+        success: true,
+        ...body
+    };
 }
+
+

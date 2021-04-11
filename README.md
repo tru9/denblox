@@ -11,12 +11,10 @@
         <a href="https://deno.land/x/denblox"><img src="https://img.shields.io/badge/package-denblox-8266FF?style=for-the-badge"/></a>
 </p>
 
-
 <h1 align="center">
 About
 <br>
 </h1>
-
 
 <p align="center">
      DenBlox is currently in development mode, making most functions <strong>unstable</strong>.
@@ -25,24 +23,32 @@ About
     <br>
 </p>
 
-
 # Importing
+
 ```js
-import * as denblox from "https://deno.land/x/denblox/mod.ts"
+import * as denblox from "https://deno.land/x/denblox/mod.ts";
 ```
+
 # Example
+
 ```js
 import * as denblox from "https://deno.land/x/denblox/mod.ts";
 
 let getUsers = await denblox.searchUser("roblox");
-console.log(getUsers)
+console.log(getUsers);
 ```
 
 # Versions
+
 ### Stable -
-* **v1.0-alpha** - Provides basic support for User and Thumbnail functionality. 
+
+- **v1.0-alpha** - Provides basic support for User and Thumbnail functionality.
+
 ### Unstable -
-* **v0.0.1** - Not as stable as alpha version & missing readme.
-* **v0.0.0** - No purpose as I was messing around with deno.
+
+- **v0.0.1** - Not as stable as alpha version & missing readme.
+- **v0.0.0** - No purpose as I was messing around with deno.
+
 # Credits
-* [**tru9**](https://github.com/tru9/) - Library Maintainer  
+
+- [**tru9**](https://github.com/tru9/) - Library Maintainer
