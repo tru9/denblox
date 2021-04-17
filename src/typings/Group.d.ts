@@ -31,7 +31,6 @@ export interface Group {
         created: Date;
         updated: Date;
     };
-    icon?: string;
     memberCount: number;
     isBuildersClubOnly: boolean;
     publicEntryAllowed: boolean;
