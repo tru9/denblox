@@ -1,189 +1,314 @@
-import * as types from "../typings/User.d.ts";
-import { refreshToken } from "../helpers/refreshToken.ts";
-import storage from "../helpers/storage.ts";
+import * as Types from "../typings/User.d.ts";
 import { request } from "../util/request.ts";
+import * as BTypes from "../typings/Badge.d.ts";
 
 /**
- * Sends a request to check the current authenticated user while sending the cookie provided as well.
- * @returns An Authenticated User
+ *  Sends a request to `Users` endpoint, getting details of a ROBLOX User.
+ * @category `User`
+ * @alias `getUserByName`
+ * @param {string} username - A viable Username.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const user = await denblox.getUserByName("tru9")
+   console.log(user)
  */
 
-export async function getAuthenticatedUser(): Promise<types.AuthenticatedUser> {
-    const response = await request(
-        "https://users.roblox.com/v1/users/authenticated",
-        "CookieReq"
-    );
-    const body = await response.json();
+export async function getUserByName(username: string): Promise<Types.User> {
+  if (typeof username !== "string") {
+    throw new Error("An invalid username was provided.");
+  }
 
-    if ("errors" in body) throw body.errors[0];
-    return body;
+  const body =
+    await (await request(
+      `https://api.roblox.com/users/get-by-username?username=${username}`,
+    )).json();
+  if ("errors" in body) {
+    throw (body.errors.length <= 1) ? body.errors[0] : body.errors.join(", ");
+  }
+
+  const user = await getUser(body.Id);
+  return user;
 }
 
 /**
- * Sends a request to more than one API endpoints getting information related to a ROBLOX User ID.
- * @param id - User ID
- * @returns A User object
+ *  Sends a request to `Users` endpoint, getting details of a ROBLOX User.
+ * @category `User`
+ * @alias `getUser`
+ * @param {string | number} userId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const user = await denblox.getUser(0)
+   console.log(user)
  */
 
-export async function getUser(id: string | number): Promise<types.User> {
-    if (!id) throw new Error("Endpoint requires a ID; Missing ID Parameter.");
+export async function getUser(userId: string | number): Promise<Types.User> {
+  if (isNaN(Number(userId))) {
+    throw new Error("An invalid User Id was provided.");
+  }
 
-    const [user, avatar, headshot] = await Promise.all([
-        request(`https://users.roblox.com/v1/users/${id}`),
-        request(
-            `https://thumbnails.roblox.com/v1/users/avatar?userIds=${id}&size=352x352&format=Png`
-        ),
-        request(
-            `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${id}&size=352x352&format=Png`
-        ),
-    ]).then(async (res) => [
-        ...(await Promise.all(res.map((req) => req.json()))),
-    ]);
+  const [body, avatar, headshot] = await Promise.all([
+    request(`https://users.roblox.com/v1/users/${userId}`),
+    request(
+      `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png`,
+    ),
+    request(
+      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=352x352&format=Png`,
+    ),
+  ]).then(async (res) => [
+    ...(await Promise.all(res.map((req) => req.json()))),
+  ]);
+  if ("errors" in body) {
+    throw (body.errors.length <= 1) ? body.errors[0] : body.errors.join(", ");
+  }
 
-    if ("error" in user) throw user.errors[0];
-    return {
-        ...user,
-        avatarUrl: avatar.data[0].imageUrl,
-        headshotUrl: headshot.data[0].imageUrl,
-    };
+  return {
+    ...body,
+    created: new Date(body.created),
+    thumbnails: {
+      body: avatar.data[0].imageUrl,
+      headshot: headshot.data[0].imageUrl,
+    },
+  };
 }
 
 /**
- * Sends a request to the ROBLOX Group Endpoint, Getting a specific user's groups & roles.
- * @param id - User ID
- * @returns A Collection of User groups.
+ *  Sends a request to `Users` endpoint, getting all details of groups a user is in.
+ * @category `User`
+ * @alias `getUserGroups`
+ * @param {string | number} userId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const userGroups = await denblox.getUserGroups(0)
+   console.log(userGroups)
  */
-
 export async function getUserGroups(
-    id: number | string
-): Promise<types.UserGroup[]> {
-    if (!id) throw new Error("Endpoint requires ID; Missing ID parameter.");
-    const response = await request(
-        `https://groups.roblox.com/v1/users/${id}/groups/roles`
-    );
-    const body = await response.json();
+  userId: number | string,
+): Promise<Types.UserGroupInterface> {
+  if (isNaN(Number(userId))) {
+    throw new Error("An invalid User Id was provided.");
+  }
+  const body =
+    await (await request(
+      `https://groups.roblox.com/v1/users/${userId}/groups/roles`,
+    )).json();
 
-    if ("errors" in body) throw body.errors[0];
-    const out = [];
-    for (const data of body.data) {
-        const obj = { ...data };
-        if (obj.group.shout) {
-            obj.group.shout.created = new Date(data.group.shout.created);
-            obj.group.shout.updated = new Date(data.group.shout.updated);
-        }
-        out.push(obj);
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
+
+  const out: Types.UserGroup[] = [];
+  body.data.forEach((element: Types.UserGroup, index: number) => {
+    if (element.group.shout) {
+      out.push({
+        ...element,
+        group: {
+          ...element.group,
+          shout: {
+            ...element.group.shout,
+            created: new Date(body.data[index].group.shout.created),
+            updated: new Date(body.data[index].group.shout.updated),
+          },
+        },
+      });
     }
+  });
 
-    return out;
+  return {
+    data: out,
+  };
 }
 
 /**
- * Send a request to the badge's endpoint getting a user's badges by ID. Set additional properties in the `init` parameter.
- * @param id - User ID
- * @param init - Request Config
- * @returns User Badges
+*  Sends a request to `Users` endpoint, getting all details of badges a user has obtained.
+ * @category `User`
+ * @alias `getUserBadges`
+ * @param {string | number} userId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const getUserBadges = await denblox.getUserBadges(0)
+   console.log(getUserBadges)
  */
 
-export async function getUserBadges(
-    id: number | string,
-    init?: {
-        limit?: 10 | 25 | 50 | 100;
-        sort?: "Asc" | "Desc";
-        cursor?: string;
-    }
-): Promise<types.UserBadges> {
-    if (!id) throw new Error("Endpoint requires ID; Missing ID parameter.");
-    let url = `https://badges.roblox.com/v1/users/${id}/badges?limit=${init?.limit || 10
-        }&sortOrder=${init?.sort || "Asc"}`;
-    if (init?.cursor) url += `&cursor=${init?.cursor}`;
+export async function getUserBadges(userId: number | string, init?: {
+  limit?: 10 | 25 | 50 | 100;
+  sort?: "Asc" | "Desc";
+  cursor?: string;
+}): Promise<BTypes.BadgeUserInterface> {
+  if (isNaN(Number(userId))) {
+    throw new Error("An invalid User Id was provided.");
+  }
+  const url =
+    `https://badges.roblox.com/v1/users/${userId}/badges?limit=${init?.limit ||
+    10}&sortOrder=${init?.sort || "Asc"}${init?.cursor ? `&cursor=${init.cursor}` : ""
+    }`;
+  const body = await (await request(url)).json();
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
 
-    const response = await request(url);
-    const body = await response.json();
+  const out: BTypes.BadgeUser[] = [];
+  body.data.forEach((element: BTypes.BadgeUser, index: number) =>
+    out.push({
+      ...element,
+      created: new Date(body.data[index].created),
+      updated: new Date(body.data[index].created),
+    })
+  );
 
-    if ("errors" in body) throw body.errors[0];
-
-    const out = [];
-    for (const data of body.data) {
-        const obj = { ...data };
-        obj.created = new Date(data.created);
-        obj.updated = new Date(data.updated);
-        out.push(obj);
-    }
-
-    return {
-        nextPageCursor: body.nextPageCursor,
-        previousPageCursor: body.previousPageCursor,
-        data: out,
-    };
+  return {
+    nextPageCursor: body.nextPageCursor,
+    previousPageCursor: body.previousPageCursor,
+    data: out,
+  };
 }
 
 /**
- * Sends a request with a query to lookup a user. Set additional properties in the `init` parameter.
- * @param query - Query
- * @param init - Request Config
- * @returns UserSearch
+*  Sends a request to `Users` endpoint, searching a user with a given query.
+ * @category `User`
+ * @alias `searchUser`
+ * @param {string} query - A viable User Query.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const users = await denblox.searchUser("t_ru9")
+   console.log(users)
  */
 
-export async function searchUser(
-    query: string,
-    init?: {
-        limit?: 10 | 25 | 50 | 100;
-        cursor?: string;
-    }
-): Promise<types.UserSearch> {
-    if (!query) throw new Error("Endpoint requires a query; Missing Query.");
-    let url = `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${init?.limit || 10
-        }`;
-    if (init?.cursor) url += `&cursor=${init.cursor}`;
+export async function searchUser(query: string, init?: {
+  limit?: 10 | 25 | 50 | 100;
+  cursor?: string;
+}): Promise<Types.UserSearch> {
+  if (typeof query !== "string") {
+    throw new Error("An invalid query was provided.");
+  }
+  const url =
+    `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${init
+      ?.limit || 10}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
+  const body = await (await request(url)).json();
 
-    const response = await request(url);
-    const body = await response.json();
-
-    if ("errors" in body) throw body["errors"][0];
-    return body;
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
+  return body;
 }
 
 /**
- * Sends a friend request to a specified user via ID.
- * @param id - User ID
+*  Sends a request to `Users` endpoint, sending a friend request to a user.
+ * @category `User`
+ * @alias `friend`
+ * @param {string | number} targetId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const request = await denblox.friend("2434302765")
+   console.log(request.success)
  */
 
-export async function friend(id: number | string): Promise<{ success: boolean, isCaptchaResponse: boolean }> {
-    if (!id) throw new Error("Endpoint requires a User ID; Missing ID.");
-    const response = await request(`https://friends.roblox.com/v1/users/${id}/request-friendship`, "Cookie&Token", { method: "POST" });
-    const body = await response.json();
+export async function friend(
+  targetId: number | string,
+): Promise<{ success: boolean; isCaptchaResponse: boolean }> {
+  if (isNaN(Number(targetId))) {
+    throw new Error("Endpoint requires a User ID; Missing ID.");
+  }
+  const body =
+    await (await request(
+      `https://friends.roblox.com/v1/users/${targetId}/request-friendship`,
+      "strict",
+      { method: "POST" },
+    )).json();
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
 
-    if ("errors" in body) throw body["errors"][0];
-    return body;
+  return body;
 }
 
 /**
- * Follows a given user based on their ID.
- * @param id - User ID
- * @returns Booleans
+*  Sends a request to `Users` endpoint, following a user.
+ * @category `User`
+ * @alias `friend`
+ * @param {string | number} targetId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const request = await denblox.follow("2434302765")
+   console.log(request.success)
  */
 
-export async function follow(id: number | string): Promise<{ success: boolean, isCaptchaResponse: boolean }> {
-    if (!id) throw new Error("Endpoint requires a User ID; Missing ID.");
-    const response = await request(`https://friends.roblox.com/v1/users/${id}/follow`, "Cookie&Token", { method: "POST" });
-    const body = await response.json();
-    if ("errors" in body) throw body["errors"][0];
-    return body;
+export async function follow(
+  targetId: number | string,
+): Promise<{ success: boolean; isCaptchaResponse: boolean }> {
+  if (isNaN(Number(targetId))) {
+    throw new Error("An invalid Target ID was provided.");
+  }
+  const body =
+    await (await request(
+      `https://friends.roblox.com/v1/users/${targetId}/follow`,
+      "strict",
+      { method: "POST" },
+    )).json();
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
+
+  return body;
 }
 
 /**
- * Unfollows a given user based on their ID.
- * @param id - User Id
- * @returns Boolean
+*  Sends a request to `Users` endpoint, unfollowing a user.
+ * @category `User`
+ * @alias `friend`
+ * @param {string | number} targetId - A viable User ID.
+ *
+ * @example
+ * import * as denblox from "https://deno.land/x/denblox/mod.ts"
+ *
+*  const request = await denblox.unfollow("2434302765")
+   console.log(request.success)
  */
 
-export async function unfollow(id: number | string): Promise<{ success: boolean }> {
-    if (!id) throw new Error("Endpoint requires a User ID; Missing ID.");
-    const response = await request(`https://friends.roblox.com/v1/users/${id}/unfollow`, "Cookie&Token", { method: "POST" });
-    const body = await response.json();
-    if ("errors" in body) throw body["errors"][0];
-    return {
-        success: true,
-        ...body
-    };
+export async function unfollow(
+  targetId: number | string,
+): Promise<{ success: boolean }> {
+  if (isNaN(Number(targetId))) {
+    throw new Error("An invalid Target ID was provided.");
+  }
+  const response = await request(
+    `https://friends.roblox.com/v1/users/${targetId}/unfollow`,
+    "strict",
+    { method: "POST" },
+  );
+  const body = await response.json();
+
+  if ("errors" in body) {
+    throw (body["errors"].length <= 1)
+      ? body["errors"][0]
+      : body["errors"].join(", ");
+  }
+
+  return {
+    success: response.ok,
+    ...body,
+  };
 }

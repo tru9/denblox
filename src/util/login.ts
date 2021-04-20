@@ -1,6 +1,5 @@
 import { request } from "../util/request.ts";
-import { AuthenticatedUser } from "./types.d.ts";
-import storage from "../util/data.ts";
+import session from "./storage.ts";
 
 /**
  * Begins a session with ROBLOX by logging in.
@@ -14,22 +13,8 @@ import storage from "../util/data.ts";
  * ```
  */
 
-export async function login(cookie: string): Promise<AuthenticatedUser> {
-    if (!cookie) throw new Error("Endpoint requires Cookie; Missing Cookie Paramter.");
-
-    const response = await request("https://users.roblox.com/v1/users/authenticated", undefined, {
-        headers: {
-            "Cookie": `.ROBLOSECURITY=${cookie}`,
-            "Content-type": "application/json"
-        }
-    });
-
-    const body = await response.json();
-    if ("errors" in body) throw body.errors[0];
-
-    storage["cookie"] = cookie;
-    return body;
-};
-
-
-
+interface AuthenticatedUser {
+  displayName: string;
+  username: string;
+  id: number;
+}

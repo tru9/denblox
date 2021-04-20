@@ -1,48 +1,58 @@
-import session from "../helpers/storage.ts";
-import { refreshToken } from "../helpers/refreshToken.ts";
+import session from "./storage.ts";
+import refreshToken from "../helpers/token.ts";
 
+/* usages
+plain - send a request with a cookie if cookie exists
+normal - send a request with cookie
+strict - send a request with cookie and CSRF token 
+*/
 
-export async function request(uri: string, req?: "CookieReq" | "Cookie&Token" | "Cookie" | undefined, init?: RequestInit | undefined): Promise<Response> {
-    const requestProps: RequestInit = { ...init };
+export async function request(
+  uri: string,
+  req?: "normal" | "strict" | "plain" | undefined,
+  init?: RequestInit | undefined,
+): Promise<Response> {
+  let props: RequestInit = { ...init };
+  const cookie = session["cookie"];
+  if (req && ["normal", "strict"].includes(req) && !session) {
+    throw new Error("You have not logged in.");
+  }
 
-    if (requestProps.headers && "Cookie" in requestProps.headers) session.cookie = requestProps.headers["Cookie"];
-    if (req === "CookieReq" && !session["cookie"]) throw new Error("Endpoint requires a User; Session not Started.");
-    if (req === "CookieReq") requestProps.headers = {
-        ...requestProps.headers,
-        "Cookie": `${session.cookie}`
+  // plain
+  if (req === "plain" && session["cookie"]) {
+    props.headers = {
+      ...props.headers,
+      "Cookie": `.ROBLOSECURITY=${session.cookie}`,
     };
+  }
 
-    if (req === "Cookie" && session["cookie"]) requestProps.headers = {
-        ...requestProps.headers,
-        "Cookie": `${session.cookie}`
+  // normal req
+  if (props.headers && "Cookie" in props.headers) {
+    session["cookie"] = props.headers["Cookie"];
+  }
+  if (cookie && req === "normal") {
+    props.headers = {
+      ...props.headers,
+      "Cookie": `.ROBLOSECURITY=${session.cookie}`,
     };
+  }
 
-
-
-    if (req === "Cookie&Token" && !session["cookie"]) {
-        if (!session["cookie"]) throw new Error("Endpoint requires a User; Session not Started.");
-
-        const CSRF = await refreshToken();
-        if (!CSRF) throw new Error("Endpoint requires a X-CSRF-TOKEN; User Authentication Required.");
+  // strict
+  if (req === "strict") {
+    const token = await refreshToken();
+    if (token) {
+      props.headers = {
+        ...props.headers,
+        "Cookie": `.ROBLOSECURITY=${session.cookie}`,
+        "x-csrf-token": token?.toString(),
+      };
+    } else {
+      throw new Error(
+        "You are not logged in or something went wrong with the x-csrf-token.",
+      );
     }
+  }
 
-    if (req === "Cookie&Token") {
-        const CSRF = await refreshToken();
-        if (!CSRF) throw new Error("Endpoint requires a X-CSRF-TOKEN; User Authentication Required.");
-
-        requestProps.headers = {
-            ...requestProps.headers,
-            "Cookie": `${session.cookie}`,
-            "X-CSRF-TOKEN": CSRF
-        };
-    }
-
-    const response = await fetch(uri, requestProps);
-    return response;
+  const response = await fetch(uri, props);
+  return response;
 }
-
-
-
-
-
-
