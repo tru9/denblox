@@ -24,14 +24,6 @@ Denblox is a free and open-source Roblox API (Application programming interface)
 
 ---
 
-### Example
-
-Run this in your terminal to see a quick example of denblox. After that,
-you'll be asked to input a Roblox username.
-
-```js
-deno run --allow-net https://deno.land/x/denblox/example.ts
-```
 
 ### Importing
 
@@ -46,7 +38,17 @@ You can import denblox using the mod.ts file; if you need anything else, you can
 import * as denblox from "https://deno.land/x/denblox/mod.ts";
 ```
 
-### Example
+### Example | 1
+
+Run this in your terminal to see a quick example of denblox. After that,
+you'll be asked to input a Roblox username.
+
+```js
+deno run --allow-net https://deno.land/x/denblox/example.ts
+```
+
+
+### Example | 2
 
 This is a self-explanatory header, but it shows you some fundamentals and how to use one of the library functions.
 
