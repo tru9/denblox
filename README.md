@@ -17,7 +17,7 @@ About
 </h1>
 
 <p align="center">
-Denblox is a Roblox API Library that is open-sourced. Denblox was designed to make it easier to support ROBLOX without having to write your own API Wrapper. This Library offers multiple functions giving you more access to Roblox.
+Denblox is a free and open-source Roblox API (Application programming interface) Library. Denblox was created to make supporting ROBLOX simpler without the need to create your own API Wrapper. This Library has a variety of functions that give you more Roblox access.
 </p>
 
 # Constructing
@@ -26,8 +26,8 @@ Denblox is a Roblox API Library that is open-sourced. Denblox was designed to ma
 
 ### Example
 
-For a quick example of denblox, run this in your terminal. You'll then be
-prompted for a Roblox Username.
+Run this in your terminal to see a quick example of denblox. After that,
+you'll be asked to input a Roblox username.
 
 ```js
 deno run --allow-net https://deno.land/x/denblox/example.ts
@@ -35,8 +35,7 @@ deno run --allow-net https://deno.land/x/denblox/example.ts
 
 ### Importing
 
-You can import denblox via the mod.ts file, If you need anything else for
-another cause you can import them at the main
+You can import denblox using the mod.ts file; if you need anything else, you can do so also at the file directory.
 [package](https://deno.land/x/denblox/mod.ts).
 
 **_Requirements_**
@@ -49,8 +48,7 @@ import * as denblox from "https://deno.land/x/denblox/mod.ts";
 
 ### Example
 
-This is a self-explanatory header, but this shows you some basics and how to use
-the library.
+This is a self-explanatory header, but it shows you some fundamentals and how to use one of the library functions.
 
 ```js
 import * as denblox from "https://deno.land/x/denblox/mod.ts";
@@ -68,7 +66,8 @@ Unnecessary information you might need.
 ---
 
 - **_Version_** - v1.0
-- **_Socials_** - Github - [tru9](https://github.com/tru9/) Twitter -
-  [tru9](https://twitter.com/tru9_) Support Server -
-  [Discord](https://discord.gg/F5xuN4aV6r)
+- **_Socials_** - 
+  - Github - [tru9](https://github.com/tru9/)  
+  - Twitter - [tru9](https://twitter.com/tru9_) 
+  - Support Server - [Discord](https://discord.gg/F5xuN4aV6r)
 - **_License_** -MIT License
