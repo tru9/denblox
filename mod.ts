@@ -4,7 +4,6 @@ export * from "./src/controllers/Group.ts";
 export * from "./src/controllers/Badge.ts";
 export * from "./src/controllers/Game.ts";
 export * from "./src/helpers/auth.ts";
-export * from "./src/util/request.ts";
 export type { Icon } from "./src/controllers/Icons.ts";
 
 export type {
