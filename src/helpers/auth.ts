@@ -1,4 +1,4 @@
-import session from "../util/storage.ts";
+import { session } from "../util/storage.ts";
 import { request } from "../util/request.ts";
 
 interface AuthenticatedUser {
