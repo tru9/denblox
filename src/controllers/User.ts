@@ -118,6 +118,7 @@ export async function getUserGroups(
 				},
 			});
 		}
+		out.push(element);
 	});
 
 	return {
