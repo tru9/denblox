@@ -16,20 +16,19 @@ import * as BTypes from "../typings/Badge.d.ts";
  */
 
 export async function getUserByName(username: string): Promise<Types.User> {
-  if (typeof username !== "string") {
-    throw new Error("An invalid username was provided.");
-  }
+	if (typeof username !== "string") {
+		throw new Error("An invalid username was provided.");
+	}
 
-  const body =
-    await (await request(
-      `https://api.roblox.com/users/get-by-username?username=${username}`,
-    )).json();
-  if ("errors" in body) {
-    throw (body.errors.length <= 1) ? body.errors[0] : body.errors.join(", ");
-  }
+	const body = await (
+		await request(`https://api.roblox.com/users/get-by-username?username=${username}`)
+	).json();
+	if ("errors" in body) {
+		throw body.errors.length <= 1 ? body.errors[0] : body.errors.join(", ");
+	}
 
-  const user = await getUser(body.Id);
-  return user;
+	const user = await getUser(body.Id);
+	return user;
 }
 
 /**
@@ -46,33 +45,31 @@ export async function getUserByName(username: string): Promise<Types.User> {
  */
 
 export async function getUser(userId: string | number): Promise<Types.User> {
-  if (isNaN(Number(userId))) {
-    throw new Error("An invalid User Id was provided.");
-  }
+	if (isNaN(Number(userId))) {
+		throw new Error("An invalid User Id was provided.");
+	}
 
-  const [body, avatar, headshot] = await Promise.all([
-    request(`https://users.roblox.com/v1/users/${userId}`),
-    request(
-      `https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png`,
-    ),
-    request(
-      `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=352x352&format=Png`,
-    ),
-  ]).then(async (res) => [
-    ...(await Promise.all(res.map((req) => req.json()))),
-  ]);
-  if ("errors" in body) {
-    throw (body.errors.length <= 1) ? body.errors[0] : body.errors.join(", ");
-  }
+	const [body, avatar, headshot] = await Promise.all([
+		request(`https://users.roblox.com/v1/users/${userId}`),
+		request(
+			`https://thumbnails.roblox.com/v1/users/avatar?userIds=${userId}&size=352x352&format=Png`,
+		),
+		request(
+			`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=352x352&format=Png`,
+		),
+	]).then(async (res) => [...(await Promise.all(res.map((req) => req.json())))]);
+	if ("errors" in body) {
+		throw body.errors.length <= 1 ? body.errors[0] : body.errors.join(", ");
+	}
 
-  return {
-    ...body,
-    created: new Date(body.created),
-    thumbnails: {
-      body: avatar.data[0].imageUrl,
-      headshot: headshot.data[0].imageUrl,
-    },
-  };
+	return {
+		...body,
+		created: new Date(body.created),
+		thumbnails: {
+			body: avatar.data[0].imageUrl,
+			headshot: headshot.data[0].imageUrl,
+		},
+	};
 }
 
 /**
@@ -88,42 +85,42 @@ export async function getUser(userId: string | number): Promise<Types.User> {
    console.log(userGroups)
  */
 export async function getUserGroups(
-  userId: number | string,
+	userId: number | string,
 ): Promise<Types.UserGroupInterface> {
-  if (isNaN(Number(userId))) {
-    throw new Error("An invalid User Id was provided.");
-  }
-  const body =
-    await (await request(
-      `https://groups.roblox.com/v1/users/${userId}/groups/roles`,
-    )).json();
+	if (isNaN(Number(userId))) {
+		throw new Error("An invalid User Id was provided.");
+	}
 
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
+	const body = await (
+		await request(`https://groups.roblox.com/v1/users/${userId}/groups/roles`)
+	)
+		.clone()
+		.json();
 
-  const out: Types.UserGroup[] = [];
-  body.data.forEach((element: Types.UserGroup, index: number) => {
-    if (element.group.shout) {
-      out.push({
-        ...element,
-        group: {
-          ...element.group,
-          shout: {
-            ...element.group.shout,
-            created: new Date(body.data[index].group.shout.created),
-            updated: new Date(body.data[index].group.shout.updated),
-          },
-        },
-      });
-    }
-  });
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
 
-  return {
-    data: out,
-  };
+	const out: Types.UserGroup[] = [];
+	body.data.forEach((element: Types.UserGroup, index: number) => {
+		if (element.group.shout) {
+			out.push({
+				...element,
+				group: {
+					...element.group,
+					shout: {
+						...element.group.shout,
+						created: new Date(body.data[index].group.shout.created),
+						updated: new Date(body.data[index].group.shout.updated),
+					},
+				},
+			});
+		}
+	});
+
+	return {
+		data: out,
+	};
 }
 
 /**
@@ -139,39 +136,39 @@ export async function getUserGroups(
    console.log(getUserBadges)
  */
 
-export async function getUserBadges(userId: number | string, init?: {
-  limit?: 10 | 25 | 50 | 100;
-  sort?: "Asc" | "Desc";
-  cursor?: string;
-}): Promise<BTypes.BadgeUserInterface> {
-  if (isNaN(Number(userId))) {
-    throw new Error("An invalid User Id was provided.");
-  }
-  const url =
-    `https://badges.roblox.com/v1/users/${userId}/badges?limit=${init?.limit ||
-    10}&sortOrder=${init?.sort || "Asc"}${init?.cursor ? `&cursor=${init.cursor}` : ""
-    }`;
-  const body = await (await request(url)).json();
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
+export async function getUserBadges(
+	userId: number | string,
+	init?: {
+		limit?: 10 | 25 | 50 | 100;
+		sort?: "Asc" | "Desc";
+		cursor?: string;
+	},
+): Promise<BTypes.BadgeUserInterface> {
+	if (isNaN(Number(userId))) {
+		throw new Error("An invalid User Id was provided.");
+	}
+	const url = `https://badges.roblox.com/v1/users/${userId}/badges?limit=${
+		init?.limit || 10
+	}&sortOrder=${init?.sort || "Asc"}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
+	const body = await (await request(url)).json();
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
 
-  const out: BTypes.BadgeUser[] = [];
-  body.data.forEach((element: BTypes.BadgeUser, index: number) =>
-    out.push({
-      ...element,
-      created: new Date(body.data[index].created),
-      updated: new Date(body.data[index].created),
-    })
-  );
+	const out: BTypes.BadgeUser[] = [];
+	body.data.forEach((element: BTypes.BadgeUser, index: number) =>
+		out.push({
+			...element,
+			created: new Date(body.data[index].created),
+			updated: new Date(body.data[index].created),
+		}),
+	);
 
-  return {
-    nextPageCursor: body.nextPageCursor,
-    previousPageCursor: body.previousPageCursor,
-    data: out,
-  };
+	return {
+		nextPageCursor: body.nextPageCursor,
+		previousPageCursor: body.previousPageCursor,
+		data: out,
+	};
 }
 
 /**
@@ -187,24 +184,25 @@ export async function getUserBadges(userId: number | string, init?: {
    console.log(users)
  */
 
-export async function searchUser(query: string, init?: {
-  limit?: 10 | 25 | 50 | 100;
-  cursor?: string;
-}): Promise<Types.UserSearch> {
-  if (typeof query !== "string") {
-    throw new Error("An invalid query was provided.");
-  }
-  const url =
-    `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${init
-      ?.limit || 10}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
-  const body = await (await request(url)).json();
+export async function searchUser(
+	query: string,
+	init?: {
+		limit?: 10 | 25 | 50 | 100;
+		cursor?: string;
+	},
+): Promise<Types.UserSearch> {
+	if (typeof query !== "string") {
+		throw new Error("An invalid query was provided.");
+	}
+	const url = `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${
+		init?.limit || 10
+	}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
+	const body = await (await request(url)).json();
 
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
-  return body;
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
+	return body;
 }
 
 /**
@@ -221,24 +219,23 @@ export async function searchUser(query: string, init?: {
  */
 
 export async function friend(
-  targetId: number | string,
+	targetId: number | string,
 ): Promise<{ success: boolean; isCaptchaResponse: boolean }> {
-  if (isNaN(Number(targetId))) {
-    throw new Error("Endpoint requires a User ID; Missing ID.");
-  }
-  const body =
-    await (await request(
-      `https://friends.roblox.com/v1/users/${targetId}/request-friendship`,
-      "strict",
-      { method: "POST" },
-    )).json();
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
+	if (isNaN(Number(targetId))) {
+		throw new Error("Endpoint requires a User ID; Missing ID.");
+	}
+	const body = await (
+		await request(
+			`https://friends.roblox.com/v1/users/${targetId}/request-friendship`,
+			"strict",
+			{ method: "POST" },
+		)
+	).json();
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
 
-  return body;
+	return body;
 }
 
 /**
@@ -255,24 +252,21 @@ export async function friend(
  */
 
 export async function follow(
-  targetId: number | string,
+	targetId: number | string,
 ): Promise<{ success: boolean; isCaptchaResponse: boolean }> {
-  if (isNaN(Number(targetId))) {
-    throw new Error("An invalid Target ID was provided.");
-  }
-  const body =
-    await (await request(
-      `https://friends.roblox.com/v1/users/${targetId}/follow`,
-      "strict",
-      { method: "POST" },
-    )).json();
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
+	if (isNaN(Number(targetId))) {
+		throw new Error("An invalid Target ID was provided.");
+	}
+	const body = await (
+		await request(`https://friends.roblox.com/v1/users/${targetId}/follow`, "strict", {
+			method: "POST",
+		})
+	).json();
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
 
-  return body;
+	return body;
 }
 
 /**
@@ -288,27 +282,23 @@ export async function follow(
    console.log(request.success)
  */
 
-export async function unfollow(
-  targetId: number | string,
-): Promise<{ success: boolean }> {
-  if (isNaN(Number(targetId))) {
-    throw new Error("An invalid Target ID was provided.");
-  }
-  const response = await request(
-    `https://friends.roblox.com/v1/users/${targetId}/unfollow`,
-    "strict",
-    { method: "POST" },
-  );
-  const body = await response.json();
+export async function unfollow(targetId: number | string): Promise<{ success: boolean }> {
+	if (isNaN(Number(targetId))) {
+		throw new Error("An invalid Target ID was provided.");
+	}
+	const response = await request(
+		`https://friends.roblox.com/v1/users/${targetId}/unfollow`,
+		"strict",
+		{ method: "POST" },
+	);
+	const body = await response.json();
 
-  if ("errors" in body) {
-    throw (body["errors"].length <= 1)
-      ? body["errors"][0]
-      : body["errors"].join(", ");
-  }
+	if ("errors" in body) {
+		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
+	}
 
-  return {
-    success: response.ok,
-    ...body,
-  };
+	return {
+		success: response.ok,
+		...body,
+	};
 }
