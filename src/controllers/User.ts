@@ -22,7 +22,9 @@ export async function getUserByName(username: string): Promise<Types.User> {
 
 	const body = await (
 		await request(`https://api.roblox.com/users/get-by-username?username=${username}`)
-	).json();
+	)
+		.clone()
+		.json();
 	if ("errors" in body) {
 		throw body.errors.length <= 1 ? body.errors[0] : body.errors.join(", ");
 	}
@@ -57,7 +59,7 @@ export async function getUser(userId: string | number): Promise<Types.User> {
 		request(
 			`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${userId}&size=352x352&format=Png`,
 		),
-	]).then(async (res) => [...(await Promise.all(res.map((req) => req.json())))]);
+	]).then(async (res) => [...(await Promise.all(res.map((req) => req.clone().json())))]);
 	if ("errors" in body) {
 		throw body.errors.length <= 1 ? body.errors[0] : body.errors.join(", ");
 	}
@@ -150,7 +152,7 @@ export async function getUserBadges(
 	const url = `https://badges.roblox.com/v1/users/${userId}/badges?limit=${
 		init?.limit || 10
 	}&sortOrder=${init?.sort || "Asc"}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
-	const body = await (await request(url)).json();
+	const body = await (await request(url)).clone().json();
 	if ("errors" in body) {
 		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
 	}
@@ -197,7 +199,7 @@ export async function searchUser(
 	const url = `https://users.roblox.com/v1/users/search?keyword=${query}&limit=${
 		init?.limit || 10
 	}${init?.cursor ? `&cursor=${init.cursor}` : ""}`;
-	const body = await (await request(url)).json();
+	const body = await (await request(url)).clone().json();
 
 	if ("errors" in body) {
 		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
@@ -230,7 +232,9 @@ export async function friend(
 			"strict",
 			{ method: "POST" },
 		)
-	).json();
+	)
+		.clone()
+		.json();
 	if ("errors" in body) {
 		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
 	}
@@ -261,7 +265,9 @@ export async function follow(
 		await request(`https://friends.roblox.com/v1/users/${targetId}/follow`, "strict", {
 			method: "POST",
 		})
-	).json();
+	)
+		.clone()
+		.json();
 	if ("errors" in body) {
 		throw body["errors"].length <= 1 ? body["errors"][0] : body["errors"].join(", ");
 	}
